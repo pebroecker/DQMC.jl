@@ -1,0 +1,3 @@
+abstract stack_type
+abstract parameter_type
+abstract observable_type
