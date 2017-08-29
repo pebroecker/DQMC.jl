@@ -27,6 +27,9 @@ type stack <: stack_type
   direction::Int
   n_interactions::Int
   curr_interaction::Int
+
+  det::real_type
+
   stack() = new()
 end
 
@@ -78,7 +81,7 @@ function test_stack(s::stack_type, p::parameter_type, l::lattice)
 end
 
 function get_interaction_matrix(p::parameter_type, l::lattice, slice::Int64, pref::Float64 = 1.)
-    return spdiagm(exp(pref * p.lambda * p.af_field[:, slice]))
+    return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice] - p.delta_tau * p.mu)))
 end
 
 

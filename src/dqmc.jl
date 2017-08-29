@@ -20,7 +20,6 @@ stack_handling = String(params["STACK_HANDLING"])
 include("$(model_name)/types.jl")
 include("la.jl")
 include("lattice.jl")
-include("observable.jl")
 include("stack.jl")
 include("$(stack_handling).jl")
 include("$(model_name)/parameters.jl")
@@ -43,6 +42,7 @@ include("$(model_name)/measurements.jl")
         initialize_lattice_parameters(p, l)
         load_state(output_file, p)
 
+
         s = stack()
         initialize_stack(s, p, l)
         initialize_model_stack(s, p, l)
@@ -50,31 +50,41 @@ include("$(model_name)/measurements.jl")
         build_stack(s, p, l)
         propagate(s, p, l)
 
-        obs = initialize_observables(s, p, l)
+        obs = initialize_observables(output_file, s, p, l)
 
         sweeps = p.thermalization + p.measurements
-        msrmnt(x) = x - thermalization
+        msrmnt(x) = x - p.thermalization
 
         try
             for _ in 1:sweeps
-                run(output_file, s, p, l)
-                if msrmnt(p.curr_sweep) > 0
-                    measure(obs, s, p, l) end
-                if msrmnt(p.curr_sweep) > p.measurements break end
+                for u in 1:2 * p.slices
+                    update(s, p, l)
+
+                    if msrmnt(p.curr_sweep) > 0
+                        measure(output_file, msrmnt(p.curr_sweep), obs, s, p, l)
+                    end
+                end
+
+                if msrmnt(p.curr_sweep) > p.measurements
+                    println("Finished $(p.measurements) measurements")
+                    dump_measurements(output_file, obs, s, p, l)
+                    break
+                end
+
                 p.curr_sweep += 1
+                if p.curr_sweep % 256 == 0
+                    println(p.curr_sweep)
+                end
             end
         catch e
-            if isa(e, InterruptError)
+            if isa(e, InterruptException)
+                save_state(output_file, p)
+                dump_measurements(output_file, obs, s, p, l)
             else
+                display(catch_stacktrace())
+                println(e)
             end
         end
-    end
-
-    function run(output_file::String, s::stack, p::parameters, l::lattice)
-        for u in 1:2 * p.slices
-            update(s, p, l)
-        end
-        dump_measurements(output_file, obs, s, p, l)
     end
 
     main(ARGS)
