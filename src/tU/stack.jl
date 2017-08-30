@@ -69,7 +69,11 @@ function initialize_model_stack(s::stack_type, p::parameter_type, l::lattice)
 end
 
 function get_wavefunction(s::stack_type, p::parameter_type, l::lattice)
-    return eye(greens_type, l.n_sites)
+    if p.stack_handling == "ground_state"
+        return s.free_fermion_wavefunction
+    else
+        return eye(greens_type, l.n_sites)
+    end
 end
 
 function test_stack(s::stack_type, p::parameter_type, l::lattice)

@@ -41,7 +41,7 @@ function measure(output_file::String, sweep::Int, obs::observable_type, s::stack
             #     println("Real Spin Spin\t", mean(obs.mc_observables["Real Spin-Spin"].timeseries))
             #     println("Real Pi-Pi\t", mean(obs.mc_observables["Real Pi-Pi"].timeseries))
             # end
-            push!(obs.mc_observables["Density"], sum(trace(s.greens)))
+            push!(obs.mc_observables["Density"], sum(l.n_sites - trace(s.greens)))
             measure_double_occupancy(obs, s, p, l)
             # measure_pi_pi(obs, s, p, l)
             # measure_long_range_order(obs, s, p, l)

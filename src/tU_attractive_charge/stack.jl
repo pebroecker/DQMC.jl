@@ -1,53 +1,70 @@
 type stack <: stack_type
-  u_stack::Array{greens_type, 3}
-  d_stack::Array{real_type, 2}
-  t_stack::Array{greens_type, 3}
+    free_fermion_wavefunction::Array{greens_type, 2}
 
-  Ul::Array{greens_type, 2}
-  Ur::Array{greens_type, 2}
-  Dl::Array{real_type, 1}
-  Dr::Array{real_type, 1}
-  Tl::Array{greens_type, 2}
-  Tr::Array{greens_type, 2}
+    u_stack::Array{greens_type, 3}
+    d_stack::Array{real_type, 2}
+    t_stack::Array{greens_type, 3}
 
-  greens::Array{greens_type, 2}
-  greens_temp::Array{greens_type, 2}
-  hopping_matrix::Array{greens_type, 2}
-  hopping_matrix_inv::Array{greens_type, 2}
+    Ul::Array{greens_type, 2}
+    Ur::Array{greens_type, 2}
+    Dl::Array{real_type, 1}
+    Dr::Array{real_type, 1}
+    Tl::Array{greens_type, 2}
+    Tr::Array{greens_type, 2}
 
-  U::Array{greens_type, 2}
-  Q::Array{greens_type, 2}
-  D::Array{real_type, 1}
-  R::Array{greens_type, 2}
-  T::Array{greens_type, 2}
+    greens::Array{greens_type, 2}
+    greens_temp::Array{greens_type, 2}
+    hopping_matrix::Array{greens_type, 2}
+    hopping_matrix_inv::Array{greens_type, 2}
 
-  ranges::Array{UnitRange, 1}
-  n_elements::Int
-  current_slice::Int
-  direction::Int
-  n_interactions::Int
-  curr_interaction::Int
+    U::Array{greens_type, 2}
+    Q::Array{greens_type, 2}
+    D::Array{real_type, 1}
+    R::Array{greens_type, 2}
+    T::Array{greens_type, 2}
 
-  det::real_type
+    ranges::Array{UnitRange, 1}
+    n_elements::Int
+    current_slice::Int
+    direction::Int
+    n_interactions::Int
+    curr_interaction::Int
 
-  stack() = new()
+    det::real_type
+
+    stack() = new()
 end
 
 
 function initialize_model_stack(s::stack_type, p::parameter_type, l::lattice)
     s.hopping_matrix[:] = 0.
+    wave_hopping = zeros(l.n_sites, l.n_sites)
+
     for r in 1:size(l.bonds_idx, 2)
-        s.hopping_matrix[l.bonds_idx[1, r], l.bonds_idx[2, r]] = p.delta_tau
-        s.hopping_matrix[l.bonds_idx[2, r], l.bonds_idx[1, r]] = p.delta_tau
+        s.hopping_matrix[l.bonds_idx[1, r], l.bonds_idx[2, r]] = p.delta_tau * p.hoppings[l.bond_types[r]]
+        s.hopping_matrix[l.bonds_idx[2, r], l.bonds_idx[1, r]] = p.delta_tau * p.hoppings[l.bond_types[r]]
+
+        wave_hopping[l.bonds_idx[1, r], l.bonds_idx[2, r]] = p.hoppings[l.bond_types[r]] * (1 + 0.1 * randn())
+        wave_hopping[l.bonds_idx[2, r], l.bonds_idx[1, r]] = p.hoppings[l.bond_types[r]] * (1 + 0.1 * randn())
     end
-    # display(s.hopping_matrix)
     s.hopping_matrix_inv = expm(-1. * s.hopping_matrix)
     s.hopping_matrix = expm(s.hopping_matrix)
+
+    wave_hopping += wave_hopping'
+    wave_hopping /= 2
+    wave_eig = eigfact!(wave_hopping)
+    println(wave_eig[:values])
+    println(size(wave_eig[:vectors]))
+    s.free_fermion_wavefunction = wave_eig[:vectors][:, 1:p.particles]
 end
 
 
 function get_wavefunction(s::stack_type, p::parameter_type, l::lattice)
-    return eye(greens_type, l.n_sites)
+    if p.stack_handling == "ground_state"
+        return s.free_fermion_wavefunction
+    else
+        return eye(greens_type, l.n_sites)
+    end
 end
 
 function test_stack(s::stack_type, p::parameter_type, l::lattice)
@@ -86,36 +103,14 @@ end
 
 
 function get_hopping_matrix(s::stack_type, p::parameter_type, l::lattice, pref::Float64=1.)
-    # M = eye(greens_type, l.n_sites, l.n_sites)
-    #
     if pref > 0 return s.hopping_matrix
     else return s.hopping_matrix_inv    end
-    # end
-    #     for h in l.chkr_hop  M = h * M  end
-    #     for h in reverse(l.chkr_hop)  M = h * M  end
-    # else
-    #     for h in l.chkr_hop_inv  M = h * M  end
-    #     for h in reverse(l.chkr_hop_inv)   M = h * M   end
-    # end
-    #
-    # return M
 end
 
 function slice_matrix(slice::Int, s::stack_type, p::parameter_type, l::lattice, pref::Float64=1.)
-
-    # M = eye(greens_type, l.n_sites, l.n_sites)
-    # println(get_interaction_matrix(p, l, slice))
     if pref > 0
-        # return get_interaction_matrix(p, l, slice)
        return get_hopping_matrix(s, p, l) * get_interaction_matrix(p, l, slice)# * M
-    #
-    #     for h in l.chkr_hop    M = h * M    end
-    #     for h in reverse(l.chkr_hop)    M = h * M    end
     else
-        # return get_interaction_matrix(p, l, slice, -1.)
-        # for h in l.chkr_hop_inv    M = h * M     end
-        # for h in reverse(l.chkr_hop_inv)     M = h * M    end
         return get_interaction_matrix(p, l, slice, -1.) * get_hopping_matrix(s, p, l, -1.)
     end
-    # return M
 end
