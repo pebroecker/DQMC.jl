@@ -54,7 +54,7 @@ include("$(model_name)/measurements.jl")
 
         sweeps = p.thermalization + p.measurements
         msrmnt(x) = x - p.thermalization
-
+        println(l.n_sites - sum(trace(s.greens)))
         try
             for _ in 1:sweeps
                 for u in 1:2 * p.slices
