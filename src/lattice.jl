@@ -6,6 +6,7 @@ type lattice
   positions::Array{Int, 2}
   bonds::Array{Int, 2}
   bonds_idx::Array{Int, 2}
+  bond_types::Array{Int}
   site_bonds::Array{Int, 2}
   vectors::Array{Float64, 2}
   lattice() = new()
@@ -20,6 +21,7 @@ function get_lattice(params::Dict)
     l.n_bonds = Int(lat["n_bonds"])
     l.positions = hcat(lat["positions"]...)
     l.bonds = hcat(lat["bonds"]...)
+    l.bond_types = lat["bond_types"]
     l.bonds_idx = hcat(lat["bonds_idx"]...)
     l.vectors = hcat(lat["vectors"]...)
     return l

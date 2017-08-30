@@ -1,26 +1,29 @@
 type parameters <: parameter_type
-  particles::Int
-  U::Float64
-  lambda::Float64
-  delta_tau::Float64
-  theta::Float64
-  mu::Float64
-  slices::Int
-  safe_mult::Int
-  U_af_field::Array{Float64, 2}
-  curr_sweep::Int
-  thermalization::Int
-  measurements::Int
-  lattice_name::String
-  seed::Int
-  r::MersenneTwister
+    stack_handling::String
+    particles::Int
+    hoppings::Array{Float64, 1}
+    U::Float64
+    lambda::Float64
+    delta_tau::Float64
+    theta::Float64
+    mu::Float64
+    slices::Int
+    safe_mult::Int
+    U_af_field::Array{Float64, 2}
+    curr_sweep::Int
+    thermalization::Int
+    measurements::Int
+    lattice_name::String
+    seed::Int
+    r::MersenneTwister
 
-  parameters() = new()
+    parameters() = new()
 end
 
 function get_parameters(params::Dict)
     # Assign parameters based on XML file
     p = parameters()
+    p.stack_handling = params["STACK_HANDLING"]
     p.curr_sweep = 1
     p.thermalization = Int(params["THERMALIZATION"])
     p.measurements = Int(params["MEASUREMENTS"])
@@ -34,20 +37,17 @@ function get_parameters(params::Dict)
     p.r = srand(p.seed)
     # parameter for Hubbard-Stratonovich transformation | SU(2) invariant version
     p.lambda = acosh(exp(p.U * p.delta_tau / 2))
-
+    p.hoppings = [parse(Float64, h) for h in split(params["HOPPINGS"], ",")]
     # in case we want to move away from half filling
-    if "MU" in keys(params)
-        p.mu = Float64(params["MU"])
-    else
-        p.mu = 0.0
-    end
+    p.mu = "MU" in keys(params) ? Float64(params["MU"]) : 0.0
+
     println("Working with U = $(p.U) and mu = $(p.mu)")
     return p
 end
 
 
 function initialize_lattice_parameters(p::parameters, l::lattice)
-    p.particles = l.n_sites
+    p.particles = "PARTICLES" in keys(params) ? params["PARTICLES"] : l.n_sites
     p.U_af_field = rand([-1, 1], l.n_sites, p.slices)
 end
 
