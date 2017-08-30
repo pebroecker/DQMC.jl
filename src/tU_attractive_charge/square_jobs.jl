@@ -4,26 +4,25 @@ code_dir = ENV["CODE_DIR"]
 lattice_dir = ENV["LATTICE_DIR"]
 include("$(code_dir)/json_parameters.jl")
 
-for L in [4]
+for L in [8]
     W = L
-    beta = 10
+    beta = 20
     dt = 0.1
 
-    dir = "L_$(L)_W_$(W)_gs"
+    dir = "L_$(L)_W_$(W)_ft"
     if !isdir(dir) mkdir(dir) end
     cd(dir)
     prefix = "square_L_$(L)_W_$(W)_beta_$(beta)_dt_$(dt)"
     if !(isdir(prefix)) mkdir(prefix) end
     cd(prefix)
 
-    p = Dict{Any, Any}("LATTICE_FILE"=>["$(lattice_dir)/square_lattice_L_$(L)_W_$(W).json"], "SLICES"=>[Int(beta / dt)], "DELTA_TAU"=>[dt], "SAFE_MULT"=>[10], "U"=>[8.0], "SEED"=>[13])
+    p = Dict{Any, Any}("LATTICE_FILE"=>["$(lattice_dir)/square_lattice_L_$(L)_W_$(W).json"], "SLICES"=>[Int(beta / dt)], "DELTA_TAU"=>[dt], "SAFE_MULT"=>[5], "U"=>[8.0], "HOPPINGS"=>["1.0,1.0,1.0"], "SEED"=>[13])
     p["LATTICE"] = ["square"]
     p["MODEL"] = ["tU_attractive_charge"]
-    p["STACK_HANDLING"] = ["ground_state"]
+    p["STACK_HANDLING"] = ["finite_temperature"]
     p["THERMALIZATION"] = 256
     p["MEASUREMENTS"] = 4096
-    p["PARTICLES"] = 
-    p["HOPPINGS"] =  ["1.0,1.0,1.0"]
+    p["MU"] = [-0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6]
     write_parameters(prefix, p)
 
 
