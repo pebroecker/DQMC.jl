@@ -64,7 +64,7 @@ include("$(model_name)/measurements.jl")
                         measure(output_file, msrmnt(p.curr_sweep), obs, s, p, l)
                     end
                 end
-
+                println(l.n_sites - sum(trace(s.greens)))
                 if msrmnt(p.curr_sweep) > p.measurements
                     println("Finished $(p.measurements) measurements")
                     dump_measurements(output_file, obs, s, p, l)
