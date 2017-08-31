@@ -55,7 +55,13 @@ function initialize_model_stack(s::stack_type, p::parameter_type, l::lattice)
     wave_eig = eigfact!(wave_hopping)
     println(wave_eig[:values])
     println(size(wave_eig[:vectors]))
-    s.free_fermion_wavefunction = wave_eig[:vectors][:, 1:p.particles]
+    # display(s.hopping_matrix)
+    if p.stack_handling == "ground_state"
+        s.free_fermion_wavefunction = wave_eig[:vectors][:, 1:p.particles]
+    else
+        s.free_fermion_wavefunction =  eye(greens_type, l.n_sites)
+    end
+
 end
 
 
@@ -70,6 +76,8 @@ end
 function test_stack(s::stack_type, p::parameter_type, l::lattice)
     M = eye(greens_type, l.n_sites)
     M = multiply_slice_matrix_left(M, 1, s, p, l, 1.)
+    # display(s.hopping_matrix[:, 1:8])
+    # display(s.hopping_matrix[:, end - 8:end])
     M = multiply_slice_matrix_right(M, 1, s, p, l, -1.)
     M -= eye(greens_type, l.n_sites)
     println("Slice matrix test 1 yields [$(minimum(abs(M))), $(maximum(abs(M)))]")
@@ -98,7 +106,7 @@ function test_stack(s::stack_type, p::parameter_type, l::lattice)
 end
 
 function get_interaction_matrix(p::parameter_type, l::lattice, slice::Int64, pref::Float64 = 1.)
-    return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice] - p.delta_tau * p.mu)))
+    return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice])))# - p.delta_tau * p.mu)))
 end
 
 

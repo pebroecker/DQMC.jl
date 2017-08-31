@@ -8,6 +8,7 @@ function add_slice_sequence_left(s::stack_type, idx::Int, p::parameter_type, l::
 
     curr_U =  curr_U * spdiagm(s.d_stack[:, idx])
     s.u_stack[:, :, idx + 1], s.d_stack[:, idx + 1], T = decompose_udt(curr_U)
+    # display(s.d_stack[:, idx + 1])
     s.t_stack[:, :, idx + 1] = T * s.t_stack[:, :, idx]
 end
 
@@ -24,7 +25,46 @@ function add_slice_sequence_right(s::stack_type, idx::Int, p::parameter_type, l:
     s.t_stack[:, :, idx] = T * s.t_stack[:, :, idx + 1]
 end
 
+
 function calculate_greens(s::stack_type, p::parameter_type, l::lattice)
+    large_M = zeros(2 * l.n_sites, 2 * l.n_sites)
+
+    Ul = s.Ul
+    Dl = s.Dl
+    Tl = s.Tl
+
+    Ur = transpose(s.Tr)
+    Dr = s.Dr
+    Tr = transpose(s.Ur)
+
+    a = 1:l.n_sites
+    b = l.n_sites + 1:2 * l.n_sites
+
+    large_M[a, a] = eye(l.n_sites) / (Tr * Ul)
+    large_M[b, b] = eye(l.n_sites) / (Tl * Ur)
+    large_M[b, a] = -diagm(Dr)
+    large_M[a, b] = diagm(Dl)
+
+    large_U, large_D, large_T = decompose_udt(large_M)
+
+    large_M[:] = 0
+    large_M[a, a] = Ul
+    large_M[b, b] = Ur
+    U_p = large_M * large_U
+
+    large_M[:] = 0
+    large_M[a, a] = Tr
+    large_M[b, b] = Tl
+    T_p = large_T * large_M
+
+    large_M[:] = spdiagm(1./large_D) * ctranspose(U_p)
+    large_G = \(T_p, large_M)
+    s.greens = large_G[a, a]
+    s.det = sum(log(large_D))
+end
+
+
+function calculate_greens_old(s::stack_type, p::parameter_type, l::lattice)
     A = spdiagm(s.Dl) * (s.Tl * transpose(s.Tr)) * spdiagm(s.Dr)
 
     M, S, N = decompose_udt(A)
@@ -33,6 +73,10 @@ function calculate_greens(s::stack_type, p::parameter_type, l::lattice)
     D = S
     T = N * transpose(s.Ur)
 
+    # println("----------------")
+    # println(s.Dl[1:5], " - ", s.Dl[end - 5:end])
+    # println(s.Dr[1:5])
+    # println(s.Dr[end - 5:end])
     # A' * X = B
     # X = A'-1 * B
     # X' = B' * A^-1
