@@ -106,7 +106,7 @@ function test_stack(s::stack_type, p::parameter_type, l::lattice)
 end
 
 function get_interaction_matrix(p::parameter_type, l::lattice, slice::Int64, pref::Float64 = 1.)
-    return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice])))# - p.delta_tau * p.mu)))
+    return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice] - p.delta_tau * p.mu)))
 end
 
 
