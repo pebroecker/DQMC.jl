@@ -19,6 +19,7 @@ for i in 1:32
             for (l, n) in enumerate(ns)
                 for sample in 1:128
                     data[site, 1, 5 * (k - 1) + l, 1, idx] = greens[m, n, sample]
+                    idx += 1
                 end
             end
         end
