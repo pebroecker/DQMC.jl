@@ -8,13 +8,14 @@ h = h5open(in_file, "r")
 # 64x2x25x2x3000
 data = zeros(L * L, 1, 25, 1, 32 * 128)
 
+idx = 1
+
 for i in 1:32
     greens = read(h, "simulation/results/greens_real/1")# + 1im * read(h, "simulation/results/greens_imag/1")
     neighs = [-L, -1, 0, 1, L]
 
     for site in 1:L * L
         ns = mod1.(site + neighs, L * L)
-        idx = 1
         for (k, m) in enumerate(ns)
             for (l, n) in enumerate(ns)
                 for sample in 1:128
