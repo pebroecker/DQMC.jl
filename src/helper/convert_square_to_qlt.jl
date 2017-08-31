@@ -6,7 +6,7 @@ out_file = "qlt_$(in_file)"
 
 h = h5open(in_file, "r")
 
-n_samples = 1
+n_samples = 32
 
 data = zeros(L * L, 1, 25, 1, n_samples * 128)
 
