@@ -38,6 +38,10 @@ function build_stack(s::stack_type, p::parameter_type, l::lattice)
     s.d_stack[:, 1] = ones(real_type, size(s.d_stack)[1])
     s.t_stack[:, :, 1] = eye(greens_type, size(s.d_stack)[1], size(s.d_stack)[1])
 
+    println(size(s.u_stack))
+    println(size(s.d_stack))
+    println(size(s.t_stack))
+    
     for i in 1:length(s.ranges)
         add_slice_sequence_left(s, i, p, l)
     end

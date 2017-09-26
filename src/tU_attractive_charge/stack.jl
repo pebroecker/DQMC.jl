@@ -64,7 +64,6 @@ function initialize_model_stack(s::stack_type, p::parameter_type, l::lattice)
 
 end
 
-
 function get_wavefunction(s::stack_type, p::parameter_type, l::lattice)
     if p.stack_handling == "ground_state"
         return s.free_fermion_wavefunction
@@ -97,6 +96,7 @@ function test_stack(s::stack_type, p::parameter_type, l::lattice)
         s.greens[:] = multiply_slice_matrix_left(s.greens, i, s, p, l, -1.)
         s.greens[:] = multiply_slice_matrix_right(s.greens, i, s, p, l, 1.)
     end
+
     s.greens_temp[:] = s.greens[:]
     s.Ul[:], s.Dl[:], s.Tl[:] = s.u_stack[:, :, end-1], s.d_stack[:, end-1], s.t_stack[:, :, end-1]
     idx = s.n_elements - 1
@@ -108,7 +108,6 @@ end
 function get_interaction_matrix(p::parameter_type, l::lattice, slice::Int64, pref::Float64 = 1.)
     return spdiagm(exp(pref * (p.lambda * p.U_af_field[:, slice] - p.delta_tau * p.mu)))
 end
-
 
 function get_hopping_matrix(s::stack_type, p::parameter_type, l::lattice, pref::Float64=1.)
     if pref > 0 return s.hopping_matrix
