@@ -195,11 +195,11 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
     actv_rep   = 1
     inactv_rep = 2
 
-    lU1_T = zeros(greens_type, p.N, p.N)
+    lU1 = zeros(greens_type, p.N, p.N)
     lU2 = zeros(greens_type, p.N, p.N)
-    lU3_T = zeros(greens_type, p.N, p.N)
+    lU3 = zeros(greens_type, p.N, p.N)
     lU4 = zeros(greens_type, p.N, p.N)
-    lU5_T = zeros(greens_type, p.N, p.N)
+    lU5 = zeros(greens_type, p.N, p.N)
 
     lD1 = zeros(real_type, p.N)
     lD2 = zeros(real_type, p.N)
@@ -207,11 +207,11 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
     lD4 = zeros(real_type, p.N)
     lD5 = zeros(real_type, p.N)
 
-    lT1_T = eye(greens_type, p.N)
+    lT1 = eye(greens_type, p.N)
     lT2 = eye(greens_type, p.N)
-    lT3_T = eye(greens_type, p.N)
+    lT3 = eye(greens_type, p.N)
     lT4 = eye(greens_type, p.N)
-    lT5_T = eye(greens_type, p.N)
+    lT5 = eye(greens_type, p.N)
 
 
     if s_A.direction == 1
@@ -302,9 +302,9 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         T4 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T4[1:p.particles, 1:p.particles] = s_A.Tl
 
-        enlarge_thinized(U4, lU4, actv_rep, p, l)
-        enlarge_thin(D4, lD4, actv_rep, p, l)
-        lT4[1:p.particles, 1:p.particles] = s_A.Tl
+        enlarge_thinized(U4, lU5, actv_rep, p, l)
+        enlarge_thin(D4, lD5, actv_rep, p, l)
+        lT5[1:p.particles, 1:p.particles] = s_A.Tl
 
         T3_T = col_to_invertible(s_A.Ur, p, l)
         D3 = ones(l.n_sites) * 1e-32
@@ -312,31 +312,37 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         U3_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U3_T[1:p.particles, 1:p.particles] = s_A.Tr
 
-        lU3_T[1:p.particles, 1:p.particles] = s_A.Tr
-        enlarge_thin(D3, lD3, actv_rep, p, l)
-        enlarge_thinized(U3_T, lU3_T, actv_rep, p, l)
+        lU4[1:p.particles, 1:p.particles] = s_A.Tr
+        enlarge_thin(D3, lD4, actv_rep, p, l)
+        enlarge_thinized(U3_T, lU4, actv_rep, p, l)
 
         U2 = col_to_invertible(s_B.Ul, p, l)
         D2 = ones(l.n_sites) * 1e-32
         T2 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T2[1:p.particles, 1:p.particles] = s_B.Tl
-
-        enlarge_thinized(U2, lU2, inactv_rep, p, l)
-        enlarge_thin(D2, lD2, inactv_rep, p, l)
-        lT2[1:p.particles, 1:p.particles] = s_B.Tl
+        enlarge_thinized(U2, lU3, inactv_rep, p, l)
+        enlarge_thin(D2, lD3, inactv_rep, p, l)
+        lT3[1:p.particles, 1:p.particles] = s_B.Tl
 
         T1_T = col_to_invertible(s_B.Ur, p, l)
         D1 = ones(l.n_sites) * 1e-32
         U1_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U1_T[1:p.particles, 1:p.particles] = s_B.Tr
+        lU2[1:p.particles, 1:p.particles] = s_B.Tr
+        enlarge_thin(D1, lD2, inactv_rep, p, l)
+        enlarge_thinized(U1_T, lU2, inactv_rep, p, l)
 
-        lU1_T[1:p.particles, 1:p.particles] = s_B.Tr
-        enlarge_thin(D1, lD1, inactv_rep, p, l)
-        enlarge_thinized(U1_T, lU1_T, inactv_rep, p, l)
+        println("left hand side")
+        display(lU5 * diagm(lD5) * lT5 * transpose(lU4) * diagm(lD4) * transpose(lT4)); println("\n")
 
-        enlarge(s_A.u_temp, T5_T, actv_rep, p, l)
-        enlarge(s_A.d_temp, D5  , actv_rep, p, l)
-        enlarge(s_A.t_temp, U5_T, actv_rep, p, l)
+        println("right hand side")
+        display(lU3 * diagm(lD3) * lT3 * transpose(lU2) * diagm(lD2 * transpose(lT2)); println("\n")
+
+
+
+        enlarge(s_A.u_temp, T1, actv_rep, p, l)
+        enlarge(s_A.d_temp, D1, actv_rep, p, l)
+        enlarge(s_A.t_temp, U1, actv_rep, p, l)
 
         enlarge_thinized(U4, s_A.u_large, actv_rep, p, l)
         # enlarge(U4, s_A.u_large, actv_rep, p, l)
@@ -345,7 +351,7 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         # display(s_A.u_large); println("\n")
         # display(s_A.t_large); println("\n")
 
-        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = ctranspose(s_A.u_large) * conj(s_A.t_large)
+        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = ctranspose(s_A.U) * conj(s_A.t_large)
         # display(M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N]); println("\n")
         Us_inv[1:p.N, 1:p.N] = ctranspose(s_A.u_large)
         Ts_inv[1:p.N, 1:p.N] = conj(s_A.t_large)
