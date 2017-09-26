@@ -195,11 +195,11 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
     actv_rep   = 1
     inactv_rep = 2
 
-    lU1 = zeros(greens_type, p.N, p.N)
-    lU2 = zeros(greens_type, p.N, p.N)
-    lU3 = zeros(greens_type, p.N, p.N)
-    lU4 = zeros(greens_type, p.N, p.N)
-    lU5 = zeros(greens_type, p.N, p.N)
+    lU1 = eye(greens_type, p.N, p.N)
+    lU2 = eye(greens_type, p.N, p.N)
+    lU3 = eye(greens_type, p.N, p.N)
+    lU4 = eye(greens_type, p.N, p.N)
+    lU5 = eye(greens_type, p.N, p.N)
 
     lD1 = zeros(real_type, p.N)
     lD2 = zeros(real_type, p.N)
@@ -222,17 +222,29 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         T4 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T4[1:p.particles, 1:p.particles] = s_B.Tl
 
+        enlarge_thinized(U4, lU4, inactv_rep, p, l)
+        enlarge_thinized(D4, lD4, inactv_rep, p, l)
+        lT4[1:p.particles, 1:p.particles] = s_B.Tl
+
         T3_T = col_to_invertible(s_B.Ur, p, l)
         D3 = ones(l.n_sites) * 1e-32
         D3[1:p.particles] = s_B.Dr
         U3_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U3_T[1:p.particles, 1:p.particles] = s_B.Tr
 
+        lU3[1:p.particles, 1:p.particles] = transpose(s_B.Tr)
+        enlarge_thinized(D3, lD3, inactv_rep, p, l)
+        enlarge_thinized(T3_T, s_B.t_large, inactv_rep, p, l)
+        lT3 = transpose(s_B.t_large)
+
         U2 = col_to_invertible(s_A.Ul, p, l)
         D2 = ones(l.n_sites) * 1e-32
         D2[1:p.particles] = s_A.Dl
         T2 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T2[1:p.particles, 1:p.particles] = s_A.Tl
+        enlarge_thinized(U2, lU2, actv_rep, p, l)
+        enlarge_thinized(D2, lD2, actv_rep, p, l)
+        lT2[1:p.particles, 1:p.particles] = s_A.Tl
 
         T1_T = col_to_invertible(s_A.Ur, p, l)
         D1 = ones(l.n_sites) * 1e-32
@@ -240,62 +252,49 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         U1_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U1_T[1:p.particles, 1:p.particles] = s_A.Tr
 
-        enlarge(s_A.u_temp, s_A.u_large, actv_rep, p, l)
+        lU1[1:p.particles, 1:p.particles] = transpose(s_A.Tr)
+        enlarge_thinized(D1, lD1, actv_rep, p, l)
         enlarge_thinized(T1_T, s_A.t_large, actv_rep, p, l)
-        # display(s_A.t_large); println("\n")
-        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = ctranspose(s_A.u_large) * conj(s_A.t_large)
-        display(M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N]); println("\n")
+        lT1 = transpose(s_A.t_large)
 
-        Us_inv[1:p.N, 1:p.N] = ctranspose(s_A.u_large)
-        Ts_inv[1:p.N, 1:p.N] = conj(s_A.t_large)
+        enlarge(s_A.u_temp, lU5, actv_rep, p, l)
+        enlarge(s_A.d_temp, lD5, actv_rep, p, l)
+        enlarge(s_A.t_temp, lT5, actv_rep, p, l)
 
-        enlarge(U1_T, s_A.u_large, actv_rep, p, l)
-        enlarge(T2, s_A.t_large, actv_rep, p, l)
+        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = inv(lU5) * inv(lT1)
+        Us_inv[1:p.N, 1:p.N] = inv(lU5)
+        Ts_inv[1:p.N, 1:p.N] = inv(lT1)
 
-        M[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(transpose(s_A.u_large)) * inv(s_A.t_large)
-        Us_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(transpose(s_A.u_large))
-        Ts_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(s_A.t_large)
+        M[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lU1) * inv(lT2)
+        Us_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lU1)
+        Ts_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lT2)
 
-        enlarge_thinized(U2, s_A.u_large, actv_rep, p, l)
-        enlarge_thinized(T3_T, s_A.t_large, inactv_rep, p, l)
+        M[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lU2) * inv(lT3)
+        Us_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lU2)
+        Ts_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lT3)
 
-        M[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = ctranspose(s_A.u_large) * conj(s_A.t_large)
-        Us_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = ctranspose(s_A.u_large)
-        Ts_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = conj(s_A.t_large)
+        M[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lU3) * inv(lT4)
+        Us_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lU3)
+        Ts_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lT4)
 
-        enlarge(U3_T, s_A.u_large, inactv_rep, p, l)
-        enlarge(T4, s_A.t_large, inactv_rep, p, l)
+        M[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lU4) * inv(lT5)
+        Us_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lU4)
+        Ts_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lT5)
 
-        M[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(transpose(s_A.u_large)) * inv(s_A.t_large)
-        Us_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(transpose(s_A.u_large))
-        Ts_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(s_A.t_large)
 
-        enlarge_thinized(U4, s_A.u_large, inactv_rep, p, l)
-        enlarge(s_A.t_temp, s_A.t_large, actv_rep, p, l)
-
-        M[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = ctranspose(s_A.u_large) * inv(s_A.t_large)
-        Us_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = ctranspose(s_A.u_large)
-        Ts_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(s_A.t_large)
-
-        enlarge(s_A.d_temp, s_A.d_large, actv_rep, p, l)
-        M[1:p.N, 4 * p.N + 1:5 * p.N] = diagm(s_A.d_large)
-        enlarge_thinized(D1, s_A.d_large, actv_rep, p, l)
-        M[1 * p.N + 1:2 * p.N, 0 * p.N + 1:1 * p.N] = -diagm(s_A.d_large)
-        enlarge_thinized(D2, s_A.d_large, actv_rep, p, l)
-        M[2 * p.N + 1:3 * p.N, 1 * p.N + 1:2 * p.N] = -diagm(s_A.d_large)
-        enlarge_thinized(D3, s_A.d_large, inactv_rep, p, l)
-        M[3 * p.N + 1:4 * p.N, 2 * p.N + 1:3 * p.N] = -diagm(s_A.d_large)
-        enlarge_thinized(D4, s_A.d_large, inactv_rep, p, l)
-        M[4 * p.N + 1:5 * p.N, 3 * p.N + 1:4 * p.N] = -diagm(s_A.d_large)
+        M[1:p.N, 4 * p.N + 1:5 * p.N] = diagm(lD5)
+        M[1 * p.N + 1:2 * p.N, 0 * p.N + 1:1 * p.N] = -diagm(lD1)
+        M[2 * p.N + 1:3 * p.N, 1 * p.N + 1:2 * p.N] = -diagm(lD2)
+        M[3 * p.N + 1:4 * p.N, 2 * p.N + 1:3 * p.N] = -diagm(lD3)
+        M[4 * p.N + 1:5 * p.N, 3 * p.N + 1:4 * p.N] = -diagm(lD4)
 
         U_l, D_l, T_l = decompose_udt(M)
         s_A.AB_det = sum(log(abs(D_l)))
-        g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (ctranspose(U_l) * Us_inv))
 
+        g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (ctranspose(U_l) * Us_inv))
         s_A.AB_greens = g_large[1:p.N, 1:p.N]
 
     elseif s_A.direction == -1
-
         U4 = col_to_invertible(s_A.Ul, p, l)
         D4 = ones(l.n_sites) * 1e-32
         D4[1:p.particles] = s_A.Dl
@@ -303,7 +302,7 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         T4[1:p.particles, 1:p.particles] = s_A.Tl
 
         enlarge_thinized(U4, lU5, actv_rep, p, l)
-        enlarge_thin(D4, lD5, actv_rep, p, l)
+        enlarge_thinized(D4, lD5, actv_rep, p, l)
         lT5[1:p.particles, 1:p.particles] = s_A.Tl
 
         T3_T = col_to_invertible(s_A.Ur, p, l)
@@ -312,114 +311,67 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         U3_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U3_T[1:p.particles, 1:p.particles] = s_A.Tr
 
-        lU4[1:p.particles, 1:p.particles] = s_A.Tr
-        enlarge_thin(D3, lD4, actv_rep, p, l)
-        enlarge_thinized(U3_T, lU4, actv_rep, p, l)
+        lU4[1:p.particles, 1:p.particles] = transpose(s_A.Tr)
+        enlarge_thinized(D3, lD4, actv_rep, p, l)
+        enlarge_thinized(T3_T, s_A.t_large, actv_rep, p, l)
+        lT4 = transpose(s_A.t_large)
 
         U2 = col_to_invertible(s_B.Ul, p, l)
         D2 = ones(l.n_sites) * 1e-32
+        D2[1:p.particles] = s_B.Dl
         T2 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T2[1:p.particles, 1:p.particles] = s_B.Tl
         enlarge_thinized(U2, lU3, inactv_rep, p, l)
-        enlarge_thin(D2, lD3, inactv_rep, p, l)
+        enlarge_thinized(D2, lD3, inactv_rep, p, l)
         lT3[1:p.particles, 1:p.particles] = s_B.Tl
 
         T1_T = col_to_invertible(s_B.Ur, p, l)
         D1 = ones(l.n_sites) * 1e-32
+        D1[1:p.particles] = s_B.Dr
         U1_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U1_T[1:p.particles, 1:p.particles] = s_B.Tr
-        lU2[1:p.particles, 1:p.particles] = s_B.Tr
-        enlarge_thin(D1, lD2, inactv_rep, p, l)
-        enlarge_thinized(U1_T, lU2, inactv_rep, p, l)
 
-        println("left hand side")
-        display(lU5 * diagm(lD5) * lT5 * transpose(lU4) * diagm(lD4) * transpose(lT4)); println("\n")
-
-        println("right hand side")
-        display(lU3 * diagm(lD3) * lT3 * transpose(lU2) * diagm(lD2 * transpose(lT2)); println("\n")
-
-
-
-        enlarge(s_A.u_temp, T1, actv_rep, p, l)
-        enlarge(s_A.d_temp, D1, actv_rep, p, l)
-        enlarge(s_A.t_temp, U1, actv_rep, p, l)
-
-        enlarge_thinized(U4, s_A.u_large, actv_rep, p, l)
-        # enlarge(U4, s_A.u_large, actv_rep, p, l)
-        enlarge(s_A.u_temp, s_A.t_large, actv_rep, p, l)
-        # println("1")
-        # display(s_A.u_large); println("\n")
-        # display(s_A.t_large); println("\n")
-
-        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = ctranspose(s_A.U) * conj(s_A.t_large)
-        # display(M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N]); println("\n")
-        Us_inv[1:p.N, 1:p.N] = ctranspose(s_A.u_large)
-        Ts_inv[1:p.N, 1:p.N] = conj(s_A.t_large)
-
-        enlarge_thin(s_A.t_temp, s_A.u_large, actv_rep, p, l)
+        lU2[1:p.particles, 1:p.particles] = transpose(s_B.Tr)
+        enlarge_thinized(D1, lD2, inactv_rep, p, l)
         enlarge_thinized(T1_T, s_A.t_large, inactv_rep, p, l)
-        # println("2")
-        # display(s_A.u_large); println("\n")
-        # display(s_A.t_large); println("\n")
+        lT2 = transpose(s_A.t_large)
 
-        M[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(transpose(s_A.u_large)) * inv(transpose(s_A.t_large))
-        # display(M[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N]); println("\n")
-        Us_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(transpose(s_A.u_large))
-        Ts_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(transpose(s_A.t_large))
+        enlarge(transpose(s_A.u_temp), lT1, actv_rep, p, l)
+        enlarge(s_A.d_temp, lD1, actv_rep, p, l)
+        enlarge(transpose(s_A.t_temp), lU1, actv_rep, p, l)
 
-        enlarge_thin(U1_T, s_A.u_large, inactv_rep, p, l)
-        enlarge_thin(T2, s_A.t_large, inactv_rep, p, l)
-        # println("3")
-        # display(real(s_A.u_large)); println("\n")
-        # display(s_A.t_large); println("\n")
+        M[0 * p.N + 1:1 * p.N, 0 * p.N + 1:1 * p.N] = inv(lU5) * inv(lT1)
+        Us_inv[1:p.N, 1:p.N] = inv(lU5)
+        Ts_inv[1:p.N, 1:p.N] = inv(lT1)
 
-        M[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = conj(s_A.u_large) * inv(s_A.t_large)
-        # display(M[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N]); println("\n")
-        Us_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = conj(s_A.u_large)
-        Ts_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(s_A.t_large)
+        M[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lU1) * inv(lT2)
+        Us_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lU1)
+        Ts_inv[1 * p.N + 1:2 * p.N, 1 * p.N + 1:2 * p.N] = inv(lT2)
 
-        enlarge_thinized(U2, s_A.u_large, inactv_rep, p, l)
-        # enlarge(U2, s_A.u_large, inactv_rep, p, l)
-        enlarge_thinized(T3_T, s_A.t_large, actv_rep, p, l)
-        # display(s_A.u_large); println("\n")
-        # display(s_A.t_large); println("\n")
-        M[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = ctranspose(s_A.u_large) * inv(transpose(s_A.t_large))
-        # display(M[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N]); println("\n")
-        Us_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = ctranspose(s_A.u_large)
-        Ts_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(transpose(s_A.t_large))
+        M[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lU2) * inv(lT3)
+        Us_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lU2)
+        Ts_inv[2 * p.N + 1:3 * p.N, 2 * p.N + 1:3 * p.N] = inv(lT3)
 
-        enlarge_thin(U3_T, s_A.u_large, actv_rep, p, l)
-        enlarge_thin(T4, s_A.t_large, actv_rep, p, l)
-        # display(s_A.u_large); println("\n")
-        # display(s_A.t_large); println("\n")
-        M[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = conj(s_A.u_large) * inv(s_A.t_large)
-        Us_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = conj(s_A.u_large)
-        Ts_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(s_A.t_large)
+        M[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lU3) * inv(lT4)
+        Us_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lU3)
+        Ts_inv[3 * p.N + 1:4 * p.N, 3 * p.N + 1:4 * p.N] = inv(lT4)
 
-        enlarge_thinized(D4, s_A.d_large, actv_rep, p, l)
-        M[1:p.N, 4 * p.N + 1:5 * p.N] = diagm(s_A.d_large)
+        M[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lU4) * inv(lT5)
+        Us_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lU4)
+        Ts_inv[4 * p.N + 1:5 * p.N, 4 * p.N + 1:5 * p.N] = inv(lT5)
 
-        enlarge(s_A.d_temp, s_A.d_large, actv_rep, p, l)
-        M[1 * p.N + 1:2 * p.N, 0 * p.N + 1:1 * p.N] = -diagm(s_A.d_large)
 
-        enlarge_thinized(D1, s_A.d_large, inactv_rep, p, l)
-        M[2 * p.N + 1:3 * p.N, 1 * p.N + 1:2 * p.N] = -diagm(s_A.d_large)
-
-        enlarge_thinized(D2, s_A.d_large, inactv_rep, p, l)
-        M[3 * p.N + 1:4 * p.N, 2 * p.N + 1:3 * p.N] = -diagm(s_A.d_large)
-
-        enlarge_thinized(D3, s_A.d_large, actv_rep, p, l)
-        M[4 * p.N + 1:5 * p.N, 3 * p.N + 1:4 * p.N] = -diagm(s_A.d_large)
+        M[1:p.N, 4 * p.N + 1:5 * p.N] = diagm(lD5)
+        M[1 * p.N + 1:2 * p.N, 0 * p.N + 1:1 * p.N] = -diagm(lD1)
+        M[2 * p.N + 1:3 * p.N, 1 * p.N + 1:2 * p.N] = -diagm(lD2)
+        M[3 * p.N + 1:4 * p.N, 2 * p.N + 1:3 * p.N] = -diagm(lD3)
+        M[4 * p.N + 1:5 * p.N, 3 * p.N + 1:4 * p.N] = -diagm(lD4)
 
         U_l, D_l, T_l = decompose_udt(M)
         s_A.AB_det = sum(log(abs(D_l)))
-        # println(s_A.AB_det)
 
         g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (ctranspose(U_l) * Us_inv))
         s_A.AB_greens = g_large[1:p.N, 1:p.N]
-        # println(real(diag(s_A.AB_greens)))
-        display(real(s_A.AB_greens)); println("\n")
-        println("Greens is done")
     else
         error("Not a valid direction")
     end
