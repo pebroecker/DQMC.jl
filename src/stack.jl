@@ -41,13 +41,37 @@ function build_stack(s::stack_type, p::parameter_type, l::lattice)
     println(size(s.u_stack))
     println(size(s.d_stack))
     println(size(s.t_stack))
-    
+
     for i in 1:length(s.ranges)
         add_slice_sequence_left(s, i, p, l)
     end
 
     s.current_slice = p.slices + 1
     s.direction = -1
+
+    # propagate(s, p, l)
+    # display(s.greens); println("\n\n")
+    # println("Occupation\t", l.n_sites - sum(trace(s.greens)))
+    # p.U_af_field *= -1
+    #
+    # s.u_stack[:, :, 1] = get_wavefunction(s, p, l)
+    # s.d_stack[:, 1] = ones(real_type, size(s.d_stack)[1])
+    # s.t_stack[:, :, 1] = eye(greens_type, size(s.d_stack)[1], size(s.d_stack)[1])
+    #
+    # println(size(s.u_stack))
+    # println(size(s.d_stack))
+    # println(size(s.t_stack))
+    #
+    # for i in 1:length(s.ranges)
+    #     add_slice_sequence_left(s, i, p, l)
+    # end
+    #
+    # s.current_slice = p.slices + 1
+    # s.direction = -1
+    #
+    # propagate(s, p, l)
+    # display(s.greens); println("\n\n")
+    # println("Occupation\t", l.n_sites - sum(trace(s.greens)))
 end
 
 function multiply_hopping_matrix_left(M::Array{greens_type, 2}, s::stack_type, p::parameter_type, l::lattice, pref::Float64=1.)
