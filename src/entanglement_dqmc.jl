@@ -57,6 +57,10 @@ include("entanglement_replica.jl")
         build_stack(s_A, p, l)
         build_stack(s_B, p, l)
 
+        # update(s_A, p, l)
+        # println("s_A greens")
+        # display(s_A.greens); println("\n")
+
         swept_on_slice_A = zeros(p.slices)
         swept_on_slice_B = zeros(p.slices)
 

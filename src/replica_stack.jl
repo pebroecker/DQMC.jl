@@ -53,6 +53,12 @@ function build_stack(s::stack_type, p::parameter_type, l::lattice)
     s.d_stack_l[:, 1] = ones(real_type, size(s.d_stack_l)[1])
     s.t_stack_l[:, :, 1] = eye(greens_type, size(s.d_stack_l)[1], size(s.d_stack_l)[1])
 
+    s.u_stack_l[:, :, 1] = eye(greens_type, l.n_sites, l.n_sites)
+    s.d_stack_l[:, 1] = ones(real_type, size(s.d_stack_l)[1])
+    s.t_stack_l[:, :, 1] = eye(greens_type, l.n_sites, l.n_sites)
+
+    # display(s.u_stack_l[:, :, 1]); println("\n")
+
     for i in s.n_elements:length(s.ranges)
         add_slice_sequence_left(s, i, p, l)
     end
@@ -60,6 +66,8 @@ function build_stack(s::stack_type, p::parameter_type, l::lattice)
     s.u_stack_r[:, :, 1] = get_wavefunction(s, p, l)
     s.d_stack_r[:, 1] = ones(real_type, size(s.d_stack_r)[1])
     s.t_stack_r[:, :, 1] = eye(greens_type, size(s.d_stack_r)[1], size(s.d_stack_r)[1])
+
+    # display(s.u_stack_r[:, :, 1]); println("\n")
 
     for i in reverse(2:s.n_elements)
         add_slice_sequence_right(s, i, p, l)
@@ -83,6 +91,8 @@ function add_slice_sequence_left(s::stack_type, idx::Int, p::parameter_type, l::
     curr_U =  curr_U * spdiagm(s.d_stack_l[:, idx + 1 - s.n_elements])
     s.u_stack_l[:, :, idx + 2 - s.n_elements], s.d_stack_l[:, idx + 2 - s.n_elements], T = decompose_udt(curr_U)
     s.t_stack_l[:, :, idx + 2 - s.n_elements] = T * s.t_stack_l[:, :, idx + 1 - s.n_elements]
+    # println("d stack left")
+    # display(s.d_stack_l[:, idx + 2 - s.n_elements]); println("\n")
     # println("Putting $(s.ranges[idx]) into idx $(idx + 2 - s.n_elements)")
 end
 
@@ -97,6 +107,8 @@ function add_slice_sequence_right(s::stack_type, idx::Int, p::parameter_type, l:
     curr_U =  curr_U * spdiagm(s.d_stack_r[:, s.n_elements - idx + 1])
     s.u_stack_r[:, :, s.n_elements - idx + 2], s.d_stack_r[:, s.n_elements - idx + 2], T = decompose_udt(curr_U)
     s.t_stack_r[:, :, s.n_elements - idx + 2] = T * s.t_stack_r[:, :, s.n_elements - idx + 1]
+    # println("d stack right")
+    # display(s.d_stack_l[:, s.n_elements - idx + 2]); println("\n")
     # println("Putting $(s.ranges[idx - 1]) into idx $(s.n_elements + 2 - idx)")
 end
 

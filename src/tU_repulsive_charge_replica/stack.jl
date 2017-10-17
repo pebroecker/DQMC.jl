@@ -177,9 +177,9 @@ end
 
 function get_onsite_interaction_matrix(s::stack_type, p::parameter_type, l::lattice, slice::Int, prefactor::Real)
     if s.replica == 1
-        return spdiagm(exp(prefactor * p.lambda * p.U_af_field_A[:, slice] + prefactor * 0.05 * p.U))
+        return spdiagm(exp(prefactor * p.lambda * p.U_af_field_A[:, slice] + prefactor * p.mu))
     else
-        return spdiagm(exp(prefactor * p.lambda * p.U_af_field_B[:, slice] + prefactor * 0.05 * p.U))
+        return spdiagm(exp(prefactor * p.lambda * p.U_af_field_B[:, slice] + prefactor * p.mu))
     end
 end
 

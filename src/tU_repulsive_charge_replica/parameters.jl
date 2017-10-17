@@ -61,6 +61,7 @@ function get_parameters(params::Dict)
 
     if p.stack_handling == "ground_state"
         p.particles = Int(params["PARTICLES"])
+        p.mu = 0.05 * p.U
     end
 
     println("Working with U = $(p.U) and mu = $(p.mu). Lambda is $(p.lambda)")
@@ -96,7 +97,8 @@ function load_state(output_file::String, p::parameters)
     if !exists(last_state, "simulation/state/curr_sweep") return end
 
     p.curr_sweep = read(last_state, "simulation/state/curr_sweep")
-    p.U_af_field = read(last_state, "simulation/state/U_configuration")
+    p.U_af_field_A = read(last_state, "simulation/state/U_configuration_A")
+    p.U_af_field_B = read(last_state, "simulation/state/U_configuration_B")
     p.r = read(last_state, "simulation/state/rng")
     println("Last dump was after $(p.curr_sweep) sweeps")
     close(last_state)
@@ -106,7 +108,8 @@ function save_state(output_file::String, p::parameters)
     h = jldopen(output_file, "r+")
     if(exists(h, "simulation/state/")) o_delete(h, "simulation/state") end
     write(h, "simulation/state/curr_sweep", p.curr_sweep)
-    write(h, "simulation/state/U_configuration", p.U_af_field)
+    write(h, "simulation/state/U_configuration_A", p.U_af_field_A)
+    write(h, "simulation/state/U_configuration_B", p.U_af_field_B)
     write(h, "simulation/state/rng", p.r)
     close(h)
 end

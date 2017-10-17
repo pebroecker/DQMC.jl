@@ -1,3 +1,7 @@
+using PyCall
+pygui(:qt)
+using PyPlot
+
 ################################################################################
 # Turning small to large matrices
 ################################################################################
@@ -41,7 +45,6 @@ function enlarge(A::Array{real_type, 1}, B::Array{real_type, 1}, replica::Int, p
         B[:] = 1.
         B[1:p.n_A] = A[1:p.n_A]
         B[l.n_sites+1 : p.N] = A[p.n_A+1 : l.n_sites]
-
     end
 end
 
@@ -155,7 +158,8 @@ function calculate_greens_full(s::stack, p::parameters, l::lattice)
         Ur_T = eye(greens_type, l.n_sites, l.n_sites)
         Ur_T[1:p.particles, 1:p.particles] = s.Tr
         # Ul Dl Tl Ur Dr Tr Tm' Dm Um'
-        M[1:1 * l.n_sites, 1:l.n_sites] = ctranspose(Ul) * conj(s.u_temp)
+
+        M[1:1 * l.n_sites, 1:l.n_sites] = inv(Ul) * conj(s.u_temp)
         M[l.n_sites + 1:2 * l.n_sites, l.n_sites + 1:2 * l.n_sites] = inv(transpose(s.t_temp)) * inv(transpose(Tr_T))
         M[2 * l.n_sites + 1:3 * l.n_sites, 2 * l.n_sites + 1:3 * l.n_sites] = inv(transpose(Ur_T)) * inv(Tl)
 
@@ -166,7 +170,7 @@ function calculate_greens_full(s::stack, p::parameters, l::lattice)
         U_l, D_l, T_l = decompose_udt(M)
         s.det = sum(log(abs(D_l)))
 
-        Us_inv[1:l.n_sites, 1:l.n_sites] = ctranspose(Ul)
+        Us_inv[1:l.n_sites, 1:l.n_sites] = inv(Ul)
         Us_inv[1 * l.n_sites + 1:2 * l.n_sites, 1 * l.n_sites + 1:2 * l.n_sites] = inv(transpose(Ur_T))
         Us_inv[2 * l.n_sites + 1:3 * l.n_sites, 2 * l.n_sites + 1:3 * l.n_sites] = inv(transpose(s.t_temp))
 
@@ -178,7 +182,10 @@ function calculate_greens_full(s::stack, p::parameters, l::lattice)
 
         # greens.determinant += logabsdet(Ts_inv)
 
-        g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (ctranspose(U_l) * Us_inv))
+        # println("Calculating greens")
+        g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (inv(U_l) * Us_inv))
+        # display(g_large); println("\n")
+        # println("What's up?")
         s.greens = g_large[1:l.n_sites, 1:l.n_sites]
         # println(diag(s.greens))
     else
@@ -193,7 +200,7 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
     M = zeros(Complex{Float64}, 5 * p.N, 5 * p.N)
 
     actv_rep   = 1
-    inactv_rep = 2
+    inactv_rep = 1
 
     lU1 = eye(greens_type, p.N, p.N)
     lU2 = eye(greens_type, p.N, p.N)
@@ -301,9 +308,15 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         T4 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T4[1:p.particles, 1:p.particles] = s_A.Tl
 
-        enlarge_thinized(U4, lU5, actv_rep, p, l)
-        enlarge_thinized(D4, lD5, actv_rep, p, l)
-        lT5[1:p.particles, 1:p.particles] = s_A.Tl
+        if p.stack_handling == "ground_state"
+            enlarge_thinized(U4, lU5, actv_rep, p, l)
+            enlarge_thinized(D4, lD5, actv_rep, p, l)
+            lT5[1:p.particles, 1:p.particles] = s_A.Tl
+        else
+            enlarge(U4, lU5, actv_rep, p, l)
+            enlarge(D4, lD5, actv_rep, p, l)
+            enlarge(T4, lT5, actv_rep, p, l)
+        end
 
         T3_T = col_to_invertible(s_A.Ur, p, l)
         D3 = ones(l.n_sites) * 1e-32
@@ -311,19 +324,33 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         U3_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U3_T[1:p.particles, 1:p.particles] = s_A.Tr
 
-        lU4[1:p.particles, 1:p.particles] = transpose(s_A.Tr)
-        enlarge_thinized(D3, lD4, actv_rep, p, l)
-        enlarge_thinized(T3_T, s_A.t_large, actv_rep, p, l)
-        lT4 = transpose(s_A.t_large)
+        if p.stack_handling == "ground_state"
+            lU4[1:p.particles, 1:p.particles] = transpose(s_A.Tr)
+            enlarge_thinized(D3, lD4, actv_rep, p, l)
+            enlarge_thinized(T3_T, s_A.t_large, actv_rep, p, l)
+            lT4 = transpose(s_A.t_large)
+        else
+            enlarge(transpose(U3_T), lU4, actv_rep, p, l)
+            enlarge(D3, lD4, actv_rep, p, l)
+            enlarge(transpose(T3_T), lT4, actv_rep, p, l)
+        end
+
 
         U2 = col_to_invertible(s_B.Ul, p, l)
         D2 = ones(l.n_sites) * 1e-32
         D2[1:p.particles] = s_B.Dl
         T2 = eye(Complex{Float64}, l.n_sites, l.n_sites)
         T2[1:p.particles, 1:p.particles] = s_B.Tl
-        enlarge_thinized(U2, lU3, inactv_rep, p, l)
-        enlarge_thinized(D2, lD3, inactv_rep, p, l)
-        lT3[1:p.particles, 1:p.particles] = s_B.Tl
+
+        if p.stack_handling == "ground_state"
+            enlarge_thinized(U2, lU3, inactv_rep, p, l)
+            enlarge_thinized(D2, lD3, inactv_rep, p, l)
+            lT3[1:p.particles, 1:p.particles] = s_B.Tl
+        else
+            enlarge(U2, lU3, inactv_rep, p, l)
+            enlarge(D2, lD3, inactv_rep, p, l)
+            enlarge(T2, lT3, inactv_rep, p, l)
+        end
 
         T1_T = col_to_invertible(s_B.Ur, p, l)
         D1 = ones(l.n_sites) * 1e-32
@@ -331,10 +358,16 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         U1_T = eye(Complex{Float64}, l.n_sites, l.n_sites)
         U1_T[1:p.particles, 1:p.particles] = s_B.Tr
 
-        lU2[1:p.particles, 1:p.particles] = transpose(s_B.Tr)
-        enlarge_thinized(D1, lD2, inactv_rep, p, l)
-        enlarge_thinized(T1_T, s_A.t_large, inactv_rep, p, l)
-        lT2 = transpose(s_A.t_large)
+        if p.stack_handling == "ground_state"
+            lU2[1:p.particles, 1:p.particles] = transpose(s_B.Tr)
+            enlarge_thinized(D1, lD2, inactv_rep, p, l)
+            enlarge_thinized(T1_T, s_B.t_large, inactv_rep, p, l)
+            lT2 = transpose(s_B.t_large)
+        else
+            enlarge(transpose(U1_T), lU2, inactv_rep, p, l)
+            enlarge(D1, lD2, inactv_rep, p, l)
+            enlarge(transpose(T1_T), lT2, inactv_rep, p, l)
+        end
 
         enlarge(transpose(s_A.u_temp), lT1, actv_rep, p, l)
         enlarge(s_A.d_temp, lD1, actv_rep, p, l)
@@ -368,10 +401,11 @@ function calculate_greens_full(s_A::stack, s_B::stack, p::parameters, l::lattice
         M[4 * p.N + 1:5 * p.N, 3 * p.N + 1:4 * p.N] = -diagm(lD4)
 
         U_l, D_l, T_l = decompose_udt(M)
-        s_A.AB_det = sum(log(abs(D_l)))
 
+        s_A.AB_det = sum(log(abs(D_l)))
         g_large = (Ts_inv * inv(T_l)) * (spdiagm(1./D_l) * (ctranspose(U_l) * Us_inv))
         s_A.AB_greens = g_large[1:p.N, 1:p.N]
+        # display(s_A.AB_greens); println("\n")
     else
         error("Not a valid direction")
     end
@@ -566,10 +600,13 @@ function propagate(s::stack_type, s_B::stack_type, p::parameter_type, l::lattice
                 s.d_temp = ones(real_type, l.n_sites)
                 s.t_temp = eye(greens_type, l.n_sites)
 
+                # display(s.Tl); println("\n")
+                # display(s.Tr); println("\n")
+                # display(s_B.Tl); println("\n")
+                # display(s_B.Tr); println("\n")
                 calculate_greens_full(s, s_B, p, l)
                 # println("At the top ", real(diag(s.AB_greens)))
                 # display(s.AB_greens); println("\n")
-
                 tmp = s.hopping_matrix_AB_inv * s.AB_greens
                 s.AB_greens = tmp * s.hopping_matrix_AB
 
@@ -582,7 +619,6 @@ function propagate(s::stack_type, s_B::stack_type, p::parameter_type, l::lattice
                 s.Ur[:], s.Dr[:], s.Tr[:] = s.u_stack_r[:, :, end], s.d_stack_r[:, end], s.t_stack_r[:, :, end]
 
                 add_slice_sequence_right_temp(s, idx, p, l)
-
                 calculate_greens_full(s, s_B, p, l)
 
                 # println("Here's da old G\t", real(diag(s.AB_greens_temp)))
