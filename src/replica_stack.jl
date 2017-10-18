@@ -1,5 +1,10 @@
 function initialize_stack(s::stack_type, p::parameter_type, l::lattice)
-    s.n_elements = convert(Int, p.slices / (2 * p.safe_mult)) + 1
+    if p.stack_handling == "ground_state"
+        s.n_elements = convert(Int, p.slices / (2 * p.safe_mult)) + 1
+    else
+        s.n_elements = convert(Int, p.slices / (p.safe_mult)) + 1
+    end
+
     println("There are $(s.n_elements) elements in the stack")
     println("We have matrices of size $(l.n_sites) x $(p.particles)")
 
@@ -52,10 +57,6 @@ function build_stack(s::stack_type, p::parameter_type, l::lattice)
     s.u_stack_l[:, :, 1] = get_wavefunction(s, p, l)
     s.d_stack_l[:, 1] = ones(real_type, size(s.d_stack_l)[1])
     s.t_stack_l[:, :, 1] = eye(greens_type, size(s.d_stack_l)[1], size(s.d_stack_l)[1])
-
-    s.u_stack_l[:, :, 1] = eye(greens_type, l.n_sites, l.n_sites)
-    s.d_stack_l[:, 1] = ones(real_type, size(s.d_stack_l)[1])
-    s.t_stack_l[:, :, 1] = eye(greens_type, l.n_sites, l.n_sites)
 
     # display(s.u_stack_l[:, :, 1]); println("\n")
 
