@@ -1,9 +1,5 @@
 function initialize_stack(s::stack_type, p::parameter_type, l::lattice)
-    if p.stack_handling == "ground_state"
-        s.n_elements = convert(Int, p.slices / (2 * p.safe_mult)) + 1
-    else
-        s.n_elements = convert(Int, p.slices / (p.safe_mult)) + 1
-    end
+    s.n_elements = convert(Int, p.slices / (2 * p.safe_mult)) + 1
 
     println("There are $(s.n_elements) elements in the stack")
     println("We have matrices of size $(l.n_sites) x $(p.particles)")
