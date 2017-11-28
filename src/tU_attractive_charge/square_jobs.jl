@@ -16,7 +16,7 @@ for L in [8]
     if !(isdir(prefix)) mkdir(prefix) end
     cd(prefix)
 
-    p = Dict{Any, Any}("LATTICE_FILE"=>["$(lattice_dir)/square_lattice_L_$(L)_W_$(W).json"], "SLICES"=>[Int(beta / dt)], "DELTA_TAU"=>[dt], "SAFE_MULT"=>[5], "U"=>[8.0], "HOPPINGS"=>["1.0,1.0,1.0"], "SEED"=>[13])
+    p = Dict{Any, Any}("LATTICE_FILE"=>["$(lattice_dir)/square_lattice_L_$(L)_W_$(W).json"], "SLICES"=>[Int(beta / dt)], "DELTA_TAU"=>[dt], "SAFE_MULT"=>[10], "U"=>[8.0], "HOPPINGS"=>["1.0,1.0,1.0"], "SEED"=>[110, 133, 156])
     p["LATTICE"] = ["square"]
     p["MODEL"] = ["tU_attractive_charge"]
     p["STACK_HANDLING"] = ["finite_temperature"]
