@@ -13,6 +13,7 @@ type stack <: stack_type
     Tr::Array{greens_type, 2}
 
     greens::Array{greens_type, 2}
+    greens_dn::Array{greens_type, 2}
     greens_temp::Array{greens_type, 2}
     hopping_matrix::Array{greens_type, 2}
     hopping_matrix_inv::Array{greens_type, 2}
@@ -60,8 +61,7 @@ function initialize_model_stack(s::stack_type, p::parameter_type, l::lattice)
         s.free_fermion_wavefunction = wave_eig[:vectors][:, 1:p.particles]
     else
         s.free_fermion_wavefunction =  eye(greens_type, l.n_sites)
-    end
-
+    end    
 end
 
 function get_wavefunction(s::stack_type, p::parameter_type, l::lattice)

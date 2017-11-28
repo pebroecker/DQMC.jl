@@ -27,7 +27,7 @@ end
 
 
 function calculate_greens(s::stack_type, p::parameter_type, l::lattice)
-    large_M = zeros(2 * l.n_sites, 2 * l.n_sites)
+    large_M = zeros(greens_type, 2 * l.n_sites, 2 * l.n_sites)
 
     Ul = s.Ul
     Dl = s.Dl
