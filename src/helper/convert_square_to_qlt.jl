@@ -8,11 +8,11 @@ h = h5open(in_file, "r")
 
 n_samples = 32
 
-data = zeros(L * L, 1, 25, 1, n_samples * 128)
+data = zeros(Complex{Float32}, L * L, 1, 25, 1, n_samples * 128)
 
 
 for i in 1:n_samples
-    greens = read(h, "simulation/results/greens_real/1")# + 1im * read(h, "simulation/results/greens_imag/1")
+    greens = read(h, "simulation/results/greens_real/$(i)") + 1im * read(h, "simulation/results/greens_imag/$(i)")
     neighs = [-L, -1, 0, 1, L]
 
     for site in 1:L * L
@@ -29,6 +29,7 @@ for i in 1:n_samples
 end
 
 out_h = h5open(out_file, "w")
-write(out_h, "correlations", data)
+write(out_h, "correlations_real", real(data))
+write(out_h, "correlations_imag", imag(data))
 HDF5.o_copy(h, "simulation/results/Density", out_h, "Density")#, HDF5.H5P_OBJECT_COPY, HDF5.H5P_LINK_CREATE)
 close(h)
