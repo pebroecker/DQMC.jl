@@ -12,6 +12,7 @@ idx = parse(Int, ARGS[2]) # index for input file
 input_file = prefix * ".task" * string(idx) * ".in.json"
 output_file = prefix * ".task" * string(idx) * ".out.h5"
 
+println("Processing input file $(input_file)")
 params = load_parameters(input_file)
 model_name = String(params["MODEL"])
 lattice_name = String(params["LATTICE"])
