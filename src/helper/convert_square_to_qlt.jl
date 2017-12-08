@@ -13,15 +13,24 @@ data = zeros(Complex{Float32}, L * L, 1, 25, 1, n_samples * 128)
 
 for i in 1:n_samples
     greens = read(h, "simulation/results/greens_real/$(i)") + 1im * read(h, "simulation/results/greens_imag/$(i)")
-    neighs = [-L, -1, 0, 1, L]
 
-    for site in 1:L * L
-        ns = mod1.(site + neighs, L * L)
+    for r in 1:L
+        for c in 1:L
+            idx = r + (c - 1) * L
+            n1 = mod1(r + 1, L)  + (c - 1) * L
+            n2 = mod1(r - 1 + L, L)  + (c - 1) * L
+            n3 = r + mod(c, L) * L
+            n4 = r + mod(c - 2 + L, L) * L
+            
+            ns = [idx, n1, n2, n3, n4]
 
-        for (k, m) in enumerate(ns)
-            for (l, n) in enumerate(ns)
-                for sample in 1:128
-                    data[site, 1, 5 * (k - 1) + l, 1, (i - 1) * 128 + sample] = greens[m, n, sample]
+            println(ns)
+
+            for (k, m) in enumerate(ns)
+                for (l, n) in enumerate(ns)
+                    for sample in 1:128
+                        data[site, 1, 5 * (k - 1) + l, 1, (i - 1) * 128 + sample] = greens[m, n, sample]
+                    end
                 end
             end
         end
